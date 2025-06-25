@@ -16,7 +16,8 @@ import {
   Video,
   FileText,
   Target,
-  Award
+  Award,
+  AlertCircle
 } from 'lucide-react';
 import { useThemeContext } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -33,6 +34,7 @@ const CreateCoursePage = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState({});
+  const [uploadError, setUploadError] = useState('');
 
   const [courseData, setCourseData] = useState({
     title: '',
@@ -191,9 +193,21 @@ const CreateCoursePage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Clear previous errors
+    setUploadError('');
+    setErrors(prev => ({ ...prev, image: '' }));
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      setErrors(prev => ({ ...prev, image: 'শুধুমাত্র ছবি ফাইল আপলোড করুন' }));
+      const errorMsg = 'শুধুমাত্র ছবি ফাইল আপলোড করুন';
+      setErrors(prev => ({ ...prev, image: errorMsg }));
+      return;
+    }
+
+    // Validate file size (10MB limit)
+    if (file.size > 10 * 1024 * 1024) {
+      const errorMsg = 'ফাইলের সাইজ অনেক বড়। সর্বোচ্চ ১০ এমবি হতে পারে।';
+      setErrors(prev => ({ ...prev, image: errorMsg }));
       return;
     }
 
@@ -209,7 +223,6 @@ const CreateCoursePage = () => {
         image: '' // Clear any previous Cloudinary URL
       }));
       
-      setErrors(prev => ({ ...prev, image: '' }));
     } catch (error) {
       console.error('Local image processing error:', error);
       setErrors(prev => ({ ...prev, image: 'ছবি প্রক্রিয়াকরণে সমস্যা হয়েছে' }));
@@ -269,6 +282,8 @@ const CreateCoursePage = () => {
     if (!validateStep(4)) return;
 
     setLoading(true);
+    setUploadError('');
+    
     try {
       let finalImageUrl = courseData.image;
 
@@ -278,8 +293,7 @@ const CreateCoursePage = () => {
           finalImageUrl = await uploadToCloudinary(courseData.imageFile, 'courses');
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
-          // For published courses, we need the image uploaded
-          console.log('ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+          setUploadError(`ছবি আপলোড করতে সমস্যা হয়েছে: ${uploadError.message}`);
           setLoading(false);
           return;
         }
@@ -331,7 +345,7 @@ const CreateCoursePage = () => {
       navigate('/instructor/courses');
     } catch (error) {
       console.error('Error saving course:', error);
-      alert('কোর্স সংরক্ষণে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+      setUploadError(`কোর্স সংরক্ষণে সমস্যা হয়েছে: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -462,7 +476,7 @@ const CreateCoursePage = () => {
                       ছবি আপলোড করতে ক্লিক করুন
                     </p>
                     <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-4`}>
-                      PNG, JPG, JPEG
+                      PNG, JPG, JPEG (সর্বোচ্চ ১০ এমবি)
                     </p>
                     <input
                       type="file"
@@ -753,6 +767,18 @@ const CreateCoursePage = () => {
             <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-6`}>
               মূল্য ও প্রকাশনা
             </h3>
+
+            {/* Upload Error Display */}
+            {uploadError && (
+              <div className={`${darkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-200'} border rounded-lg p-4 mb-6`}>
+                <div className="flex items-center">
+                  <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                  <p className={`text-sm ${darkMode ? 'text-red-200' : 'text-red-800'}`}>
+                    {uploadError}
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Pricing */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
