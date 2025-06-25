@@ -341,7 +341,7 @@ const CreateCoursePage = () => {
       const docRef = await addDoc(collection(db, 'courses'), courseToSave);
       
       // Show success message and redirect
-      alert(status === 'published' ? 'কোর্স সফলভাবে প্রকাশিত হয়েছে!' : 'কোর্স খসড়া হিসেবে সংরক্ষিত হয়েছে!');
+      console.log(status === 'published' ? 'কোর্স সফলভাবে প্রকাশিত হয়েছে!' : 'কোর্স খসড়া হিসেবে সংরক্ষিত হয়েছে!');
       navigate('/instructor/courses');
     } catch (error) {
       console.error('Error saving course:', error);
