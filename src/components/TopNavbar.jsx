@@ -80,7 +80,7 @@ const TopNavbar = () => {
                 </span>
               </motion.button>
 
-              {currentUser && (
+              {currentUser ? (
                 <div className="flex items-center space-x-2">
                   <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     <Link
@@ -91,6 +91,15 @@ const TopNavbar = () => {
                     </Link>
                   </motion.div>
                 </div>
+              ) : (
+                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Link
+                    to="/login"
+                    className={`px-4 py-2 rounded-lg ${darkMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'} transition-colors duration-200`}
+                  >
+                    লগইন
+                  </Link>
+                </motion.div>
               )}
 
              
