@@ -47,6 +47,7 @@ const CreateCoursePage = () => {
     totalLessons: '',
     image: '',
     imageFile: null,
+    localImageUrl: '', // For storing local image URL
     requirements: [''],
     learningOutcomes: [''],
     curriculum: [{ title: '', lessons: [{ title: '', duration: '' }] }],
@@ -198,16 +199,20 @@ const CreateCoursePage = () => {
 
     setImageUploading(true);
     try {
-      const imageUrl = await uploadToCloudinary(file, 'courses');
+      // Create local URL for preview
+      const localUrl = URL.createObjectURL(file);
+      
       setCourseData(prev => ({
         ...prev,
-        image: imageUrl,
-        imageFile: file
+        localImageUrl: localUrl,
+        imageFile: file,
+        image: '' // Clear any previous Cloudinary URL
       }));
+      
       setErrors(prev => ({ ...prev, image: '' }));
     } catch (error) {
-      console.error('Image upload error:', error);
-      setErrors(prev => ({ ...prev, image: 'ছবি আপলোড করতে সমস্যা হয়েছে' }));
+      console.error('Local image processing error:', error);
+      setErrors(prev => ({ ...prev, image: 'ছবি প্রক্রিয়াকরণে সমস্যা হয়েছে' }));
     } finally {
       setImageUploading(false);
     }
@@ -221,7 +226,7 @@ const CreateCoursePage = () => {
         if (!courseData.title.trim()) newErrors.title = 'কোর্সের নাম আবশ্যক';
         if (!courseData.subtitle.trim()) newErrors.subtitle = 'সাবটাইটেল আবশ্যক';
         if (!courseData.category) newErrors.category = 'ক্যাটেগরি নির্বাচন করুন';
-        if (!courseData.image) newErrors.image = 'কোর্সের ছবি আপলোড করুন';
+        if (!courseData.localImageUrl && !courseData.image) newErrors.image = 'কোর্সের ছবি আপলোড করুন';
         break;
       case 2:
         if (!courseData.description.trim()) newErrors.description = 'কোর্সের বিবরণ আবশ্যক';
@@ -265,6 +270,24 @@ const CreateCoursePage = () => {
 
     setLoading(true);
     try {
+      let finalImageUrl = courseData.image;
+
+      // If publishing and we have a local image, upload to Cloudinary
+      if (status === 'published' && courseData.imageFile && !courseData.image) {
+        try {
+          finalImageUrl = await uploadToCloudinary(courseData.imageFile, 'courses');
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          // For published courses, we need the image uploaded
+          alert('ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+          setLoading(false);
+          return;
+        }
+      } else if (status === 'draft' && courseData.localImageUrl) {
+        // For draft, we can use the local URL temporarily
+        finalImageUrl = courseData.localImageUrl;
+      }
+
       // Calculate total duration from curriculum
       const totalMinutes = courseData.curriculum.reduce((total, section) => {
         return total + section.lessons.reduce((sectionTotal, lesson) => {
@@ -275,6 +298,7 @@ const CreateCoursePage = () => {
 
       const courseToSave = {
         ...courseData,
+        image: finalImageUrl,
         status,
         instructorId: currentUser.uid,
         instructorName: currentUser.displayName || 'Unknown',
@@ -296,8 +320,9 @@ const CreateCoursePage = () => {
         }))
       };
 
-      // Remove imageFile before saving to Firestore
+      // Remove local properties before saving to Firestore
       delete courseToSave.imageFile;
+      delete courseToSave.localImageUrl;
 
       const docRef = await addDoc(collection(db, 'courses'), courseToSave);
       
@@ -408,16 +433,23 @@ const CreateCoursePage = () => {
                 কোর্সের ছবি *
               </label>
               <div className={`border-2 border-dashed ${errors.image ? 'border-red-500' : darkMode ? 'border-gray-600' : 'border-gray-300'} rounded-lg p-6`}>
-                {courseData.image ? (
+                {(courseData.localImageUrl || courseData.image) ? (
                   <div className="relative">
                     <img
-                      src={courseData.image}
+                      src={courseData.localImageUrl || courseData.image}
                       alt="Course preview"
                       className="w-full h-48 object-cover rounded-lg"
                     />
                     <button
                       type="button"
-                      onClick={() => handleInputChange('image', '')}
+                      onClick={() => {
+                        if (courseData.localImageUrl) {
+                          URL.revokeObjectURL(courseData.localImageUrl);
+                        }
+                        handleInputChange('localImageUrl', '');
+                        handleInputChange('image', '');
+                        setCourseData(prev => ({ ...prev, imageFile: null }));
+                      }}
                       className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors duration-200"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -447,7 +479,7 @@ const CreateCoursePage = () => {
                       {imageUploading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          আপলোড হচ্ছে...
+                          প্রক্রিয়াকরণ...
                         </>
                       ) : (
                         <>
@@ -765,9 +797,9 @@ const CreateCoursePage = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  {courseData.image && (
+                  {(courseData.localImageUrl || courseData.image) && (
                     <img
-                      src={courseData.image}
+                      src={courseData.localImageUrl || courseData.image}
                       alt="Course preview"
                       className="w-full h-32 object-cover rounded-lg mb-4"
                     />
