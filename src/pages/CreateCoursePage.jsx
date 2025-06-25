@@ -279,7 +279,7 @@ const CreateCoursePage = () => {
         } catch (uploadError) {
           console.error('Cloudinary upload error:', uploadError);
           // For published courses, we need the image uploaded
-          alert('ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+          console.log('ছবি আপলোড করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
           setLoading(false);
           return;
         }
