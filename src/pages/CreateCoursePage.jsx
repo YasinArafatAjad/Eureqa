@@ -196,12 +196,6 @@ const CreateCoursePage = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: 'ছবির সাইজ ৫ MB এর কম হতে হবে' }));
-      return;
-    }
-
     setImageUploading(true);
     try {
       const imageUrl = await uploadToCloudinary(file, 'courses');
@@ -436,7 +430,7 @@ const CreateCoursePage = () => {
                       ছবি আপলোড করতে ক্লিক করুন
                     </p>
                     <p className={`text-sm ${darkMode ? 'text-gray-500' : 'text-gray-500'} mb-4`}>
-                      PNG, JPG, JPEG (সর্বোচ্চ ৫ MB)
+                      PNG, JPG, JPEG
                     </p>
                     <input
                       type="file"
