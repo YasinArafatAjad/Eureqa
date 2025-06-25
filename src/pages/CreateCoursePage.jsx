@@ -403,7 +403,7 @@ const CreateCoursePage = () => {
             </div>
 
             {/* Course Image */}
-            <div>
+            {/* <div>
               <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
                 কোর্সের ছবি *
               </label>
@@ -460,7 +460,7 @@ const CreateCoursePage = () => {
                 )}
               </div>
               {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
-            </div>
+            </div> */}
           </div>
         );
 
